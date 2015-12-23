@@ -1,7 +1,7 @@
 ## AUTO-OZMEKA
 
-A collection of scripts which generate a base Centos 7 "box" file for Vagrant, 
-then provision this image into an Ozmeka installation using Vagrant and Ansible.
+A collection of scripts which uses a base Centos 7 "box" file for Vagrant, 
+then provisions an Ozmeka installation using Vagrant and Ansible.
 
 
 ### Who is this for?
