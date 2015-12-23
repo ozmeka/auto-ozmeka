@@ -1,0 +1,15 @@
+solr.undertow: {
+  httpClusterPort: 8080
+  solrHome: "./solr-home"
+  solrLogs: "./solr-logs"
+  tempDir: "./solr-temp"
+  solrVersion: "{{ solr_version }}"
+  solrWarFile: ./solr-wars/solr-${solr.undertow.solrVersion}.war
+  shutdown: {
+     httpPort: 8081
+     httpHost: "0.0.0.0"
+     # if password is not set, shutdown is not enabled.  Make this a secure password!
+     password: "{{ solr_shutdown_password }}"
+     gracefulDelay: "30s"
+  }
+}

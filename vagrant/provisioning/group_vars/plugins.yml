@@ -1,0 +1,32 @@
+---
+omeka_plugins:
+  LinkedDataElements:
+    uri: "https://github.com/ozmeka/plugin-LinkedDataElements/archive/v2.3.1.tar.gz"
+    extracts_as: "plugin-LinkedDataElements-2.3.1"
+  ItemRelations:
+    uri: "https://github.com/ozmeka/plugin-ItemRelations/archive/v2.0.13.tar.gz"
+    extracts_as: "plugin-ItemRelations-2.0.13"
+  HtmlViewer:
+    uri: "https://github.com/ozmeka/plugin-HtmlViewer/archive/v0.2.2.tar.gz"
+    extracts_as: "plugin-HtmlViewer-0.2.2"
+  SuggestAnything:
+    uri: "https://github.com/ozmeka/plugin-SuggestAnything/archive/v2.3.2.tar.gz"
+    extracts_as: "plugin-SuggestAnything-2.3.2"
+  SearchTweaks:
+    uri: "https://github.com/ozmeka/plugin-SearchTweaks/archive/v0.3.tar.gz"
+    extracts_as: "plugin-SearchTweaks-0.3"
+  TCsDialogue:
+    uri: "https://github.com/ozmeka/plugin-TCsDialogue/archive/v0.3.tar.gz"
+    extracts_as: "plugin-TCsDialogue-0.3"
+  Neatline:
+    uri: "https://github.com/ozmeka/Neatline/archive/2.4.0b.tar.gz"
+    extracts_as: "Neatline-2.4.0b"
+  OaipmhHarvester:
+    uri: "https://github.com/ozmeka/plugin-OaipmhHarvester/archive/v2.0.1a.tar.gz"
+    extracts_as: "plugin-OaipmhHarvester-2.0.1a"
+  Geolocation:
+    uri: "https://github.com/ozmeka/plugin-Geolocation/archive/v2.2.3c.tar.gz"
+    extracts_as: "plugin-Geolocation-2.2.3c"
+  SolrSearch:
+    uri: "http://omeka.org/wordpress/wp-content/uploads/Solr-Search-2.3.0.zip"
+    extracts_as: "SolrSearch"

@@ -1,0 +1,85 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          solr-undertow
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/Stop solr-undertow AS v7.0.0
+### END INIT INFO
+
+# Modified from https://gist.github.com/magicdude4eva/3b5fec150fbcaafdc34c
+
+# . ${HOME}/config/undertow.environment
+
+PID=`ps aux | grep -v grep | grep org.bremeld.solr.undertow.UndertowPackage | awk '{print $2}'`
+
+case "$1" in
+  start)
+		if [[ "" ==  "$PID" ]]
+		then
+			echo "**** Staring Solr server"
+		
+			#	$APP_HOME/undertow/bin/solr-undertow $APP_HOME/undertow/conf/solr.conf > /dev/null 2>&1 &
+		
+			/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/bin/solr-undertow /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/omeka.conf > /dev/null 2>&1 &
+			
+			echo "**** Solr server started - check log files for startup"
+		else
+			echo "**** Solr Server is running with pid=$PID"
+		fi
+		;;
+	stop)
+	  if [[ "" !=  "$PID" ]]
+		then
+				echo "Stopping Solr Server with pid=$PID"
+				
+				SHUTDOWN_RESPONSE=$(curl --write-out %{http_code} --silent --output /dev/null 'http://localhost:8081?password={{ solr_shutdown_password }}')
+				
+				if [ $SHUTDOWN_RESPONSE -eq 200 ]
+				then
+						echo "Graceful Solr server shutdown successful"
+						exit
+				elif  [ $SHUTDOWN_RESPONSE -eq 401 ]
+				then
+						echo "Graceful Solr server shutdown unauthorised"
+						exit
+				else
+						echo "Graceful Solr server shutdown failed with status=$SHUTDOWN_RESPONSE, attempting kill"
+				fi
+		
+				# Number of seconds to wait before using "kill -9"
+				WAIT_SECONDS=10
+		
+				# Counter to keep count of how many seconds have passed
+				count=0
+		
+				while kill $PID > /dev/null
+				do
+						# Wait for one second
+						sleep 1
+						# Increment the second counter
+						((count++))
+		
+						# Has the process been killed? If so, exit the loop.
+						if ! ps -p $PID > /dev/null ; then
+								break
+						fi
+		
+						# Have we exceeded $WAIT_SECONDS? If so, kill the process with "kill -9"
+						# and exit the loop
+						if [ $count -gt $WAIT_SECONDS ]; then
+								kill -9 $PID
+								break
+						fi
+				done
+				echo "Process has been killed after $count seconds."    
+		else
+			 echo "Solr Server is not running"
+		fi
+		;;
+  *)
+		echo "Usage: $0 start|stop" >&2
+		exit 3
+	  ;;
+esac

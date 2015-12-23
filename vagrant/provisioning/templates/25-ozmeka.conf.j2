@@ -1,0 +1,28 @@
+# ************************************
+# Vhost template
+# Managed by Ansible
+# ************************************
+
+<VirtualHost *:80>
+  ServerName {{ hostname }}
+	
+  ## Redirect around https://bugs.centos.org/view.php?id=8327
+  Redirect temp /install/index.html http://localhost:8080/install/install.php
+
+  ## Vhost docroot
+  DocumentRoot "/var/www/html/omeka-{{ omeka_version }}"
+
+  ## Directories, there should at least be a declaration for /var/www/html/omeka-{{ omeka_version }}
+
+  <Directory "/var/www/html/omeka-{{ omeka_version }}">
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+		Require all granted
+  </Directory>
+
+  ## Logging
+  ErrorLog "/var/log/httpd/omeka_error.log"
+  ServerSignature Off
+  CustomLog "/var/log/httpd/omeka_access.log" combined
+</VirtualHost>

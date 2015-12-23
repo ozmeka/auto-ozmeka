@@ -1,0 +1,231 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS eResearch 2015
+##
+#############################################################################
+
+
+- hosts: all
+  user: vagrant
+  sudo: yes
+
+  tasks:
+    - include_vars: group_vars/config.yml
+
+#    - selinux: state=disabled    # permissive default seems ok
+
+
+#############################################################################
+##
+##  Prep and dependencies
+##
+#############################################################################
+
+    - hostname: name={{ hostname }}
+
+    - name: install debugging tools
+      action: yum name={{ item }} state=latest
+      with_items:
+        - telnet
+        - lynx
+        - mlocate
+        - lsof
+    
+    - name: install apache
+      yum: pkg=httpd state=latest
+      register: httpdinstalled
+      
+    - lineinfile: dest=/etc/httpd/conf/httpd.conf line="NameVirtualHost *:80" state=present
+      when: httpdinstalled|success
+       
+    - template: src=templates/25-ozmeka.conf.j2 dest=/etc/httpd/conf.d/25-ozmeka.conf owner=root group=wheel mode=0644
+      when: httpdinstalled|success
+
+    - name: install php & ancillaries
+      action: yum name={{ item }} state=latest
+      with_items:
+        - php
+        - php-xml
+        - php-pear
+        - php-mysqli
+
+    - action: service name=httpd state=started enabled=yes
+
+    - name: install mariadb
+      action: yum name={{ item }} state=latest
+      with_items:
+        - mariadb-server
+        - MySQL-python  # bindings for ansible modules to use
+      register: mariadbinstalled
+      
+    - action: service name=mariadb state=started enabled=yes
+
+#    - template: src=templates/my.cnf.j2 dest=/etc/my.cnf owner=root group=wheel mode=0644
+#      when: mariadbinstalled|success
+#      notify:
+#      - restart mariadb-server
+
+    - name: ImageMagick
+      yum: pkg=ImageMagick state=latest
+      
+    - name: java
+      yum: pkg=java-{{ openjdk_version }}-openjdk state=latest
+
+
+#############################################################################
+##
+##  Omeka core
+##
+#############################################################################
+
+
+    - name: check if omeka core is present already
+      stat: path=/var/www/html/omeka-{{ omeka_version }}/index.php
+      register: omekacoreexists
+      
+ #   - debug: var=omekacoreexists.stat.exists
+    
+    - name: fetch omeka core
+      get_url: url=http://omeka.org/files/omeka-{{ omeka_version }}.zip dest=/tmp/omeka-{{ omeka_version }}.zip
+      register: omekacorearchivefetched
+      when: not omekacoreexists.stat.exists
+      
+    - name: extract omeka core
+      unarchive: src=/tmp/omeka-{{ omeka_version }}.zip dest=/var/www/html/ creates=/var/www/html/omeka-{{ omeka_version }}/index.php copy=no
+      register: omekacoreextracted
+      when: omekacorearchivefetched|success
+
+    - template: src=templates/db.ini.j2 dest=/var/www/html/omeka-{{ omeka_version }}/db.ini owner=root group=wheel mode=0644
+    
+    - command: /bin/chown -R apache:apache /var/www/html/omeka-{{ omeka_version }}/files/
+
+    - name: enable display of PHP and application errors
+      lineinfile: dest=/var/www/html/omeka-{{ omeka_version }}/.htaccess regexp='SetEnv\sAPPLICATION_ENV' line='SetEnv APPLICATION_ENV development' state=present
+      when: omekacoreextracted|success
+      
+    - mysql_db: name=omeka_db state=present
+    - mysql_user: name=omeka password={{ db_password }} priv=omeka_db.*:ALL state=present
+
+
+#############################################################################
+##
+##  Ozmeka plugins 
+##
+#############################################################################
+
+    - include_vars: group_vars/plugins.yml
+
+#    - debug: var=omeka_plugins
+
+    - name: check if omeka plugins are present already
+      stat: "path=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.key }}"
+      register: omekaplugin_exists
+      with_dict: "{{ omeka_plugins }}"
+
+#    - debug: var=omekaplugin_exists
+
+    - name: fetch omeka plugins
+      get_url: url="{{ item.item.value.uri }}" dest=/tmp/{{ item.item.key }}.tar.gz
+      register: ozmekaplugin_fetched
+      when: "not item.stat.exists"
+      with_items: "{{ omekaplugin_exists.results }}"
+      
+    - debug: var=ozmekaplugin_fetched
+      
+    - name: extract ozmeka plugins
+      unarchive: src=/tmp/{{ item.item.item.key }}.tar.gz dest=/tmp/ creates=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.item.key }}/plugin.ini copy=no
+#      register: ozmekaplugin_extracted
+      with_items: "{{ ozmekaplugin_fetched.results }}"
+      when: ozmekaplugin_fetched.changed
+      
+    - name: rename plugins to suit Omeka
+      command: "mv /tmp/{{ item.item.value.extracts_as }} /var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.key }} creates=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.key }} removes=/tmp/{{ item.item.value.extracts_as }}"
+      when: "not item.stat.exists"
+      with_items: "{{ omekaplugin_exists.results }}"
+      
+      
+#############################################################################
+##
+##  Theme
+##
+#############################################################################
+
+    # the Ozmeka Seasons theme mod improves image and file browsing
+
+    - name: check if stock theme has been moved aside
+      stat: path=/var/www/html/omeka-{{ omeka_version }}/themes/seasons.stock
+      register: stockthemeaside
+      
+    - name: move stock seasons theme aside
+      command: mv /var/www/html/omeka-{{ omeka_version }}/themes/seasons /var/www/html/omeka-{{ omeka_version }}/themes/seasons.stock
+      
+    - name: fetch omeka modified seasons theme
+      get_url: url=https://github.com/ozmeka/theme-seasons/archive/{{ theme_version }}.tar.gz dest=/tmp/seasons-ozmeka-v{{ theme_version }}.tar.gz
+      register: ozmekathemefetched
+      when: not stockthemeaside.stat.exists
+      
+    - name: extract ozmeka seasons theme
+      unarchive: src=/tmp/seasons-ozmeka-v{{ theme_version }}.tar.gz dest=/var/www/html/omeka-{{ omeka_version }}/themes/ copy=no
+      register: omekathemeextracted
+      when: ozmekathemefetched|success
+      
+    - name: rename theme to suit omeka
+      command: mv /var/www/html/omeka-{{ omeka_version }}/themes/theme-seasons-{{ theme_version }} /var/www/html/omeka-{{ omeka_version }}/themes/seasons
+      
+
+#############################################################################
+##
+##  Solr
+##
+#############################################################################
+
+    - name: check if solr is present already
+      stat: path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/bin/solr-undertow
+      register: solrexists
+      
+    - name: create solr directory 
+      file: path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/ mode=775 state=directory
+      
+    - name: fetch solr bundle
+      get_url: url=https://github.com/bremeld/solr-undertow/releases/download/v{{ undertow_version }}/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz dest=/tmp/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz
+      register: solrarchivefetched
+      when: not solrexists.stat.exists
+      
+    - name: extract solr bundle
+      unarchive: src=/tmp/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz dest=/usr/local/ creates=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/bin/solr-undertow copy=no
+      register: solrextracted
+      when: solrarchivefetched|success
+      
+    - name: check solr has omeka config
+      stat: path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/omeka.conf
+      register: solrconfigexists
+      
+    - name: configure solr for omeka - create config dir
+      command: cp -a /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/example /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka
+      when: not solrconfigexists.stat.exists
+
+    - name: configure solr for omeka - remove example configs
+      command: rm -f /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/*.conf
+      when: not solrconfigexists.stat.exists
+
+    - name: configure solr for omeka - install solr-undertow config
+      template: src=templates/omeka.conf.j2 dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/omeka.conf owner=root group=wheel mode=0644
+      
+    - name: configure solr for omeka - install solr.xml
+      template: src=templates/solr.xml.j2 dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/solr-home/solr.xml owner=root group=wheel mode=0644
+      
+    - name: configure solr for omeka - link solr to omeka plugin config
+      file: src=/var/www/html/omeka-{{ omeka_version }}/plugins/SolrSearch/solr-core/omeka dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/solr-home/omeka state=link
+      
+    - name: check solr init script
+      stat: path=/etc/init.d/solr-undertow
+      register: solrinitexists
+      
+    - name: init script for solr-undertow
+      template: src=templates/solr-undertow-init.sh.j2 dest=/etc/init.d/solr-undertow owner=root group=wheel mode=0755
+      
+    - name: enable solr service
+      service: name=solr-undertow state=started enabled=yes

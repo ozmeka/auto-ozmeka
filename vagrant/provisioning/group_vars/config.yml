@@ -1,0 +1,17 @@
+---
+hostname: ozmeka.localdomain
+
+db_host: localhost
+db_port: 3306
+db_user: omeka
+db_password: Ne47Ew2jgVenrUV
+db_name: omeka_db
+db_prefix: omeka_
+
+solr_shutdown_password: Z9dJwXG3wGg38Bc
+
+omeka_version: 2.3.1
+theme_version: 2.3a
+undertow_version: 1.4.0
+solr_version: 4.10.4
+openjdk_version: 1.8.0
