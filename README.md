@@ -87,27 +87,3 @@ blank slate.  To bring the VM back up in all these cases, simply issue
 $ ```vagrant up```.
 
 
-### Generating the base box with Packer
-
-This step isn't necessary for end-users.  Rather, it generates a Centos 7 base 
-box which Vagrant will automagically download from https://atlas.hashicorp.com
-
-If you need to build this base box, ensure your Packer installation is up to 
-date (http://packer.io) and enter:
-
-$ ```cd auto-ozmeka/packer```
-
-In the atlas.hashicorp admin area, you can create a token to use for uploads.
-
-$ ```packer push -token [insert-your-token-here] -name [your-ac]/c7base template.json```
-
-In roughly half an hour the build should complete.  You can monitor its progress
-at https://atlas.hashicorp.com.
-
-Instead of using Atlas, you can also build the box locally with simply
-
-$ ```packer build template.json```
-
-$ ```vagrant box add --name utseresearch/c7base [insert-path-to-local-box-file-here]```
-
-If this went ok, you're ready to run Vagrant.
