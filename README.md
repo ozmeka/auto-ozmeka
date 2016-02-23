@@ -1,7 +1,20 @@
+type: Development
+
+traffic-light: green
+
+target-close-date:
+
+actual-close-date:
+
+affected-group: FEIT
+
+deliverables: Scripts to provision a dev or staging environment for Ozmeka
+
+
 ## AUTO-OZMEKA
 
-A collection of scripts which uses a base Centos 7 "box" file for Vagrant, 
-then provisions an Ozmeka installation using Vagrant and Ansible.
+A collection of scripts which generate a base Centos 7 "box" file for Vagrant, 
+then provision this image into an Ozmeka installation using Vagrant and Ansible.
 
 
 ### Who is this for?
@@ -46,7 +59,7 @@ Vagrant requires the vagrant-vbguest plugin; it will install this by itself.
 
 ### Now clone the Ozmeka scripts:
 
-$ ```git clone https://github.com/ozmeka/auto-ozmeka.git```
+$ ```git clone https://codeine.research.uts.edu.au/eresearch/auto-ozmeka.git```
 
 $ ```cd auto-ozmeka/vagrant```
 
@@ -73,3 +86,28 @@ and want to start again from scratch, $ ```vagrant destroy``` will give you a
 blank slate.  To bring the VM back up in all these cases, simply issue 
 $ ```vagrant up```.
 
+
+### Generating the base box with Packer
+
+This step isn't necessary for end-users.  Rather, it generates a Centos 7 base 
+box which Vagrant will automagically download from https://atlas.hashicorp.com
+
+If you need to build this base box, ensure your Packer installation is up to 
+date (http://packer.io) and enter:
+
+$ ```cd auto-ozmeka/packer```
+
+In the atlas.hashicorp admin area, you can create a token to use for uploads.
+
+$ ```packer push -token [insert-your-token-here] -name [your-ac]/c7base template.json```
+
+In roughly half an hour the build should complete.  You can monitor its progress
+at https://atlas.hashicorp.com.
+
+Instead of using Atlas, you can also build the box locally with simply
+
+$ ```packer build template.json```
+
+$ ```vagrant box add --name utseresearch/c7base [insert-path-to-local-box-file-here]```
+
+If this went ok, you're ready to run Vagrant.

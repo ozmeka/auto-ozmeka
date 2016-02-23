@@ -1,14 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-#############################################################################
-##
-##  Auto-Ozmeka
-##  T McIntyre for UTS EResearch 2015
-##
-#############################################################################
-
-
 # automatically install necessary plugin
 required_plugins = %w( vagrant-vbguest )
 required_plugins.each do |plugin|

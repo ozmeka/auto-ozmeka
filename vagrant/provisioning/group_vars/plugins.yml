@@ -2,7 +2,7 @@
 omeka_plugins:
   LinkedDataElements:
     uri: "https://github.com/ozmeka/plugin-LinkedDataElements/archive/v2.3.1.tar.gz"
-    extracts_as: "plugin-LinkedDataElements-2.3.1"
+    extracts_as: "plugin-LinkedDataElements-2.4"
   ItemRelations:
     uri: "https://github.com/ozmeka/plugin-ItemRelations/archive/v2.0.13.tar.gz"
     extracts_as: "plugin-ItemRelations-2.0.13"
