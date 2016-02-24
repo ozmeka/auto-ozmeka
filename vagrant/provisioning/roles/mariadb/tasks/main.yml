@@ -1,0 +1,50 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  MariaDB
+##
+#############################################################################
+
+    - name: install mariadb
+      yum: >
+        name={{ item }}
+        state=latest
+      with_items:
+        - mariadb-server
+        - MySQL-python  # bindings for ansible modules to use
+      register: mariadbinstalled
+
+    # - template: >
+    #     dest=/etc/my.cnf
+    #     src=my.cnf.j2
+    #     owner=root
+    #     group=root
+    #     mode=0644
+    #   when: mariadbinstalled|success
+    #   notify: restart mariadb
+
+    - name: enable and start mariadb
+      service: >
+        name=mariadb
+        state=started
+        enabled=yes
+
+    - name: create omeka db
+      mysql_db: >
+        name=omeka_db
+        state=present
+
+    - name: create omeka db user
+      mysql_user: >
+        name=omeka
+        password={{ db_password }}
+        priv=omeka_db.*:ALL
+        state=present

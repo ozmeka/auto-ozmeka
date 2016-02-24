@@ -1,0 +1,91 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Solr
+##
+#############################################################################
+
+    - name: check if solr is present already
+      stat: path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/bin/solr-undertow
+      register: solrexists
+
+    - name: create solr directory
+      file: >
+        path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/
+        mode=775
+        state=directory
+
+    - name: fetch solr bundle
+      get_url: >
+        dest=/tmp/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz
+        url=https://github.com/bremeld/solr-undertow/releases/download/v{{ undertow_version }}/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz
+      register: solrarchivefetched
+      when: not solrexists.stat.exists
+
+    - name: extract solr bundle
+      unarchive: >
+        dest=/usr/local/ creates=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/bin/solr-undertow
+        src=/tmp/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}.tgz
+        copy=no
+      register: solrextracted
+      when: solrarchivefetched|success
+
+    - name: check solr has omeka config
+      stat: path=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/omeka.conf
+      register: solrconfigexists
+
+    - name: configure solr for omeka - create config dir
+      command: cp -a /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/example /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka
+      when: not solrconfigexists.stat.exists
+
+    - name: configure solr for omeka - remove example configs
+      command: rm -f /usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/*.conf
+      when: not solrconfigexists.stat.exists
+
+    - name: configure solr for omeka - install solr-undertow config
+      template: >
+        dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/omeka.conf
+        src=templates/omeka.conf.j2
+        owner=root
+        group=wheel
+        mode=0644
+
+    - name: configure solr for omeka - install solr.xml
+      template: >
+        dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/solr-home/solr.xml
+        src=templates/solr.xml.j2
+        owner=root
+        group=wheel
+        mode=0644
+
+    - name: configure solr for omeka - link solr to omeka plugin config
+      file: >
+        dest=/usr/local/solr-undertow-{{ undertow_version }}-with-solr-{{ solr_version }}/omeka/solr-home/omeka
+        src=/var/www/html/omeka-{{ omeka_version }}/plugins/SolrSearch/solr-core/omeka
+        state=link
+
+    - name: check solr init script
+      stat: path=/etc/init.d/solr-undertow
+      register: solrinitexists
+
+    - name: init script for solr-undertow
+      template: >
+        dest=/etc/init.d/solr-undertow
+        src=templates/solr-undertow-init.sh.j2
+        owner=root
+        group=wheel
+        mode=0755
+
+    - name: enable solr service
+      service: >
+        name=solr-undertow
+        state=started
+        enabled=yes

@@ -1,0 +1,43 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Prep and dependencies
+##
+#############################################################################
+
+    - hostname: name={{ hostname }}
+
+#    - selinux: state=disabled    # permissive default seems ok
+
+    - name: update base OS packages
+      yum: >
+        name=*
+        state=latest
+
+    - name: install debugging tools
+      yum: >
+        name={{ item }}
+        state=latest
+      with_items:
+        - telnet
+        - lynx
+        - mlocate
+        - lsof
+
+    - name: ImageMagick
+      yum: >
+        pkg=ImageMagick
+        state=latest
+
+    - name: java (openjdk)
+      yum: >
+        pkg=java-{{ openjdk_version }}-openjdk
+        state=latest

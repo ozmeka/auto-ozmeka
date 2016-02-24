@@ -1,3 +1,2 @@
 vagrant/.vagrant
-packer/packer_cache
-packer/builds
+vagrant/provisioning/group_vars/all.yml

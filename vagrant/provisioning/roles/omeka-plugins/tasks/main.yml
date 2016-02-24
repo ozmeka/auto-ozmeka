@@ -1,0 +1,48 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Ozmeka plugins
+##
+#############################################################################
+
+#    - debug: var=omeka_plugins
+
+    - name: check if omeka plugins are present already
+      stat: "path=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.key }}"
+      register: omekaplugin_exists
+      with_dict: "{{ omeka_plugins }}"
+
+#    - debug: var=omekaplugin_exists
+
+    - name: fetch omeka plugins
+      get_url: >
+        dest=/tmp/{{ item.item.key }}.tar.gz
+        url="{{ item.item.value.uri }}"
+      register: ozmekaplugin_fetched
+      when: not item.stat.exists
+      with_items: "{{ omekaplugin_exists.results }}"
+
+    - debug: var=ozmekaplugin_fetched
+
+    - name: extract ozmeka plugins
+      unarchive: >
+        src=/tmp/{{ item.item.item.key }}.tar.gz
+        dest=/tmp/
+        creates=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.item.key }}/plugin.ini
+        copy=no
+#      register: ozmekaplugin_extracted
+      with_items: "{{ ozmekaplugin_fetched.results }}"
+      when: ozmekaplugin_fetched.changed
+
+    - name: rename plugins to suit Omeka
+      command: "mv /tmp/{{ item.item.value.extracts_as }} /var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.key }} creates=/var/www/html/omeka-{{ omeka_version }}/plugins/{{ item.item.key }} removes=/tmp/{{ item.item.value.extracts_as }}"
+      when: not item.stat.exists
+      with_items: "{{ omekaplugin_exists.results }}"

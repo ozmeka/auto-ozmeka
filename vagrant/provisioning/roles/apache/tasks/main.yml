@@ -1,0 +1,47 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Apache
+##
+#############################################################################
+
+    - name: install apache
+      yum: >
+        pkg=httpd
+        state=latest
+      register: httpdinstalled
+
+    - name: install php & ancillaries
+      yum: >
+        name={{ item }}
+        state=latest
+      with_items:
+        - php
+        - php-xml
+        - php-pear
+        - php-mysqli
+
+    - name: Enable virtual hosts
+      lineinfile: >
+        line="NameVirtualHost *:80"
+        dest=/etc/httpd/conf/httpd.conf
+        state=present
+      when: httpdinstalled|success
+
+    - name: Install Ozmeka vhost config
+      template: >
+        src=25-ozmeka.conf.j2
+        dest=/etc/httpd/conf.d/25-ozmeka.conf
+        owner=root
+        group=wheel
+        mode=0644
+      when: httpdinstalled|success
+      notify: restart httpd

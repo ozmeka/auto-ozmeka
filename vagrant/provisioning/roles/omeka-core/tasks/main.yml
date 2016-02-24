@@ -1,0 +1,54 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Omeka core
+##
+#############################################################################
+
+    - name: check if omeka core is present already
+      stat: path=/var/www/html/omeka-{{ omeka_version }}/index.php
+      register: omekacoreexists
+
+ #   - debug: var=omekacoreexists.stat.exists
+
+    - name: fetch omeka core
+      get_url: >
+        url=http://omeka.org/files/omeka-{{ omeka_version }}.zip
+        dest=/tmp/omeka-{{ omeka_version }}.zip
+      register: omekacorearchivefetched
+      when: not omekacoreexists.stat.exists
+
+    - name: extract omeka core
+      unarchive: >
+        dest=/var/www/html/
+        src=/tmp/omeka-{{ omeka_version }}.zip  creates=/var/www/html/omeka-{{ omeka_version }}/index.php
+        copy=no
+      register: omekacoreextracted
+      when: omekacorearchivefetched|success
+
+    - name: db details for omeka
+      template: >
+        dest=/var/www/html/omeka-{{ omeka_version }}/db.ini
+        src=templates/db.ini.j2
+        owner=root
+        group=wheel
+        mode=0644
+
+    - name: make omeka files dir writable by apache
+      command: /bin/chown -R apache:apache /var/www/html/omeka-{{ omeka_version }}/files/
+
+    - name: enable display of PHP and application errors
+      lineinfile: >
+        dest=/var/www/html/omeka-{{ omeka_version }}/.htaccess
+        line='SetEnv APPLICATION_ENV development'
+        regexp='SetEnv\sAPPLICATION_ENV'
+        state=present
+      when: omekacoreextracted|success

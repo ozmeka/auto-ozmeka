@@ -1,0 +1,41 @@
+---
+
+#############################################################################
+##
+##  Auto-Ozmeka
+##  T McIntyre for UTS EResearch 2015-2016
+##
+#############################################################################
+
+#############################################################################
+##
+##  Theme
+##
+#############################################################################
+
+    # the Ozmeka Seasons theme mod improves image and file browsing
+
+    - name: check if stock theme has been moved aside
+      stat: path=/var/www/html/omeka-{{ omeka_version }}/themes/seasons.stock
+      register: stockthemeaside
+
+    - name: move stock seasons theme aside
+      command: mv /var/www/html/omeka-{{ omeka_version }}/themes/seasons /var/www/html/omeka-{{ omeka_version }}/themes/seasons.stock
+
+    - name: fetch omeka modified seasons theme
+      get_url: >
+        dest=/tmp/seasons-ozmeka-v{{ theme_version }}.tar.gz
+        url=https://github.com/ozmeka/theme-seasons/archive/{{ theme_version }}.tar.gz
+      register: ozmekathemefetched
+      when: not stockthemeaside.stat.exists
+
+    - name: extract ozmeka seasons theme
+      unarchive: >
+        dest=/var/www/html/omeka-{{ omeka_version }}/themes/
+        src=/tmp/seasons-ozmeka-v{{ theme_version }}.tar.gz
+        copy=no
+      register: omekathemeextracted
+      when: ozmekathemefetched|success
+
+    - name: rename theme to suit omeka
+      command: mv /var/www/html/omeka-{{ omeka_version }}/themes/theme-seasons-{{ theme_version }} /var/www/html/omeka-{{ omeka_version }}/themes/seasons

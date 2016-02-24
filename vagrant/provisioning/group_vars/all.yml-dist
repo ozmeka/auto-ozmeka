@@ -4,11 +4,11 @@ hostname: ozmeka.localdomain
 db_host: localhost
 db_port: 3306
 db_user: omeka
-db_password: my_db_password
+db_password: Ne47Ew2jgVenrUV
 db_name: omeka_db
 db_prefix: omeka_
 
-solr_shutdown_password: my_solr_shutdown_password
+solr_shutdown_password: Z9dJwXG3wGg38Bc
 
 omeka_version: 2.4
 theme_version: 2.3a
