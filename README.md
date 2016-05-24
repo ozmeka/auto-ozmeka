@@ -59,7 +59,7 @@ Vagrant requires the vagrant-vbguest plugin; it will install this by itself.
 
 ### Now clone the Ozmeka scripts:
 
-$ ```git clone https://codeine.research.uts.edu.au/eresearch/auto-ozmeka.git```
+$ ```git clone https://github.com/ozmeka/auto-ozmeka```
 
 $ ```cd auto-ozmeka/vagrant```
 
